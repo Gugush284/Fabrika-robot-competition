@@ -1,7 +1,8 @@
-#include <SPI.h>                                         
-#include <nRF24L01.h>                                    
+#include <SPI.h>      //library for SPI protocol                                  
+#include <nRF24L01.h>  //libraries for radio connection                                
 #include <RF24.h>        
-//#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>  //library for led-matrix
+Adafruit_NeoPixel strip (30, 3, NEO_GRB + NEO_KHZ800);  //object for using led-matrix
  
 
 #define SPEED_1      5 
@@ -25,7 +26,7 @@ LR_speed;
 
 LR_speed compute_LR_speed (int steer, int speed);
 
-LR_speed compute_LR_speed (int steer, int speed)
+LR_speed compute_LR_speed (int steer, int speed)      //function of computing steer and speed of robot
 {
     const int steer_bias = 488;
     const int speed_bias = 524;
@@ -95,11 +96,11 @@ LR_speed compute_LR_speed (int steer, int speed)
 }
 
 
-const uint8_t pinH1   = 7;                                   // Создаём константу указывая номер вывода H1 MotorShield (он управляет направлением 1 мотора)
-const uint8_t pinE1   = 6;                                   // Создаём константу указывая номер вывода E1 MotorShield (он управляет скоростью    1 мотора)
-const uint8_t pinE2   = 5;                                   // Создаём константу указывая номер вывода E2 MotorShield (он управляет скоростью    2 мотора)
-const uint8_t pinH2   = 4;                                   // Создаём константу указывая номер вывода H2 MotorShield (он управляет направлением 2 мотора)
-      uint8_t mSpeed  = 0;                                   // Создаём переменную для хранения скорости    моторов
+const uint8_t pinH1   = 7;                                   // pins for motor control
+const uint8_t pinE1   = 6;                                   
+const uint8_t pinE2   = 5;                                   
+const uint8_t pinH2   = 4;                                   
+      uint8_t mSpeed  = 0;                                   
       bool    mDirect = HIGH; 
 
 RF24 radio(8, 9); // nRF24L01+ (CE, CSN)
@@ -108,18 +109,18 @@ int data[5];
 void setup(){
   Serial.begin(9600);
   
-  pinMode(pinH1, OUTPUT); digitalWrite(pinH1, LOW);          // Конфигурируем вывод pinH1 как выход и устанавливаем на нём уровень логического «0»
-  pinMode(pinE1, OUTPUT); digitalWrite(pinE1, LOW);          // Конфигурируем вывод pinE1 как выход и устанавливаем на нём уровень логического «0»
-  pinMode(pinE2, OUTPUT); digitalWrite(pinE2, LOW);          // Конфигурируем вывод pinE2 как выход и устанавливаем на нём уровень логического «0»
+  pinMode(pinH1, OUTPUT); digitalWrite(pinH1, LOW);         
+  pinMode(pinE1, OUTPUT); digitalWrite(pinE1, LOW);          
+  pinMode(pinE2, OUTPUT); digitalWrite(pinE2, LOW);          
   pinMode(pinH2, OUTPUT); digitalWrite(pinH2, LOW); 
   pinMode(3, OUTPUT);
   radio.begin();                                        
-  radio.setChannel(5);                                  // Указываем канал приёма данных (от 0 до 127), 5 - значит приём данных осуществляется на частоте 2,405 ГГц (на одном канале может быть только 1 приёмник и до 6 передатчиков)
-  radio.setDataRate     (RF24_1MBPS);                   // Указываем скорость передачи данных (RF24_250KBPS, RF24_1MBPS, RF24_2MBPS), RF24_1MBPS - 1Мбит/сек
-  radio.setPALevel      (RF24_PA_HIGH);                 // Указываем мощность передатчика (RF24_PA_MIN=-18dBm, RF24_PA_LOW=-12dBm, RF24_PA_HIGH=-6dBm, RF24_PA_MAX=0dBm)
-  radio.openReadingPipe (1, 0x1234567890LL);            // Открываем 1 трубу с идентификатором 0x1234567890 для приема данных (на одном канале может быть открыто до 6 разных труб, которые должны отличаться только последним байтом идентификатора)
-  radio.startListening  ();                             // Включаем приемник, начинаем прослушивать открытую трубу
-  //  radio.stopListening   ();                         // Выключаем приёмник, если потребуется передать данные
+  radio.setChannel(5);                  //set 5 channel   (2.405 Ghz)             
+  radio.setDataRate     (RF24_1MBPS);   //set data rate            
+  radio.setPALevel      (RF24_PA_HIGH); //set receiver power              
+  radio.openReadingPipe (1, 0x1234567890LL);      //openning pipe      
+  radio.startListening  ();             //start listening                
+  //  radio.stopListening   ();                         
 
   // motor pins
   for (int i = 4; i < 8; i++) {     
@@ -128,8 +129,8 @@ void setup(){
 }
 
 void loop(){
-    if(radio.available()){                                // Если в буфере имеются принятые данные
-        radio.read(&data, sizeof(data));                  // Читаем данные в массив data и указываем сколько байт читать
+    if(radio.available()){                                // when data are available
+        radio.read(&data, sizeof(data));                  
      
         int xPosition = data[0];
         int yPosition = data[1];
@@ -145,7 +146,7 @@ void loop(){
         Serial.println("right_direction = " + String (speeds.right_direction));
         Serial.println(" ");
 
-        digitalWrite(pinH1, speeds.left_direction);
+        digitalWrite(pinH1, speeds.left_direction);        //motor control using received data
         analogWrite(pinE1, speeds.left_speed);
         //delay(30);
         digitalWrite(pinH2, speeds.right_direction);
@@ -153,14 +154,18 @@ void loop(){
         delay(30);
         if (tmblrState == 1)
         { 
-           digitalWrite(3, HIGH); 
+           for (int i = 0; i <= 15; i++)
+              strip.setPixelColor(i, strip.Color(250, 0, 0));  //turning matrix on with red colour
+           strip.show();
         }
-        else                                                                                                  
-          digitalWrite(3, LOW);
-
+        else
+        {                                                                                                  
+          for (int i = 0; i <= 15; i++)
+              strip.setPixelColor(i, strip.Color(0, 0, 0));  //turning matrix off
+           strip.show();
+        }
         
     }
     //colorWipe(matrix.Color(0, 0, 0), 50);
     //Serial.print("1");
 }
-
